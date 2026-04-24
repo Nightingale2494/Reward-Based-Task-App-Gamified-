@@ -114,3 +114,4 @@ cd contracts
 - Add e2e tests and CI pipelines
 - Persist auth in secure HTTP-only cookies if desired
 - Add PWA manifest/service worker
+
