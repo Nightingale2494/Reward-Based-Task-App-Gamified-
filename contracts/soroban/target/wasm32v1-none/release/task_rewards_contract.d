@@ -1,0 +1,1 @@
+C:\Users\user\OneDrive\Documents\Projects\Reward-Based-Task-App-Gamified--main\contracts\soroban\target\wasm32v1-none\release\task_rewards_contract.wasm: C:\Users\user\OneDrive\Documents\Projects\Reward-Based-Task-App-Gamified--main\contracts\soroban\src\lib.rs
