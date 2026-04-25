@@ -78,13 +78,7 @@ Frontend runs on `http://localhost:3000`.
 ## 3) Soroban Contract Setup
 
 Prerequisites:
-- Rust + `wasm32-unknown-unknown` target
-- Soroban CLI
-- Freighter wallet extension
 
-```bash
-cd contracts/soroban
-cargo build --target wasm32-unknown-unknown --release
 ```
 
 Deploy example:
@@ -115,3 +109,4 @@ cd contracts
 - Persist auth in secure HTTP-only cookies if desired
 - Add PWA manifest/service worker
 
+ main
