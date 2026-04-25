@@ -11,7 +11,7 @@ export default function RewardModal({ reward, onClaim, onClose }) {
         <p className="text-neon mt-3">Cost: {reward.cost} XP</p>
         <div className="mt-4 flex justify-end gap-2">
           <button className="px-3 py-2 rounded-xl bg-white/10" onClick={onClose}>Cancel</button>
-          <button className="px-3 py-2 rounded-xl bg-violet" onClick={() => onClaim(reward._id)}>
+          <button className="px-3 py-2 rounded-xl bg-violet" onClick={() => onClaim(reward)}>
             Claim
           </button>
         </div>

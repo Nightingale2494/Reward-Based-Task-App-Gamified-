@@ -4,51 +4,78 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Navbar from '../../components/Navbar';
 import RewardModal from '../../components/RewardModal';
-import { api } from '../../lib/api';
 import { connectFreighterWallet } from '../../lib/freighter';
+import { transferTokens } from '../../lib/contract';
 import { useAuthStore } from '../../store/authStore';
 
 export default function RewardsPage() {
   const [rewards, setRewards] = useState([]);
   const [selectedReward, setSelectedReward] = useState(null);
-  const setSession = useAuthStore((s) => s.setSession);
-  const auth = useAuthStore((s) => ({ token: s.token, user: s.user }));
 
+  const user = useAuthStore((s) => s.user);
+  const setSession = useAuthStore((s) => s.setSession);
+
+  // 🔥 STATIC REWARDS (no backend needed)
   useEffect(() => {
-    api.get('/rewards').then((res) => setRewards(res.data));
+    setRewards([
+      { _id: "1", name: "Coffee ☕", description: "Get a coffee", cost: 10 },
+      { _id: "2", name: "Movie 🎬", description: "Watch a movie", cost: 25 },
+      { _id: "3", name: "Pizza 🍕", description: "Eat pizza", cost: 50 }
+    ]);
   }, []);
 
   const handleConnectWallet = async () => {
     try {
       const walletAddress = await connectFreighterWallet();
-      setSession({ token: auth.token, user: { ...auth.user, walletAddress } });
-      toast.success('Freighter connected');
+
+      setSession({
+        token: null,
+        user: { walletAddress }
+      });
+
+      toast.success('Wallet connected 🚀');
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  const claim = async (rewardId) => {
+  const claim = async (reward) => {
     try {
-      const res = await api.post('/rewards/claim', { rewardId });
-      setSession({ token: auth.token, user: res.data.user });
-      toast.success('Reward claimed');
+      if (!user?.walletAddress) {
+        toast.error("Connect wallet first 😭");
+        return;
+      }
+
+      await transferTokens(reward.cost, user.walletAddress);
+
+      toast.success("Tokens sent 🚀");
       setSelectedReward(null);
+
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Claim failed');
+      console.error(error);
+      toast.error("Transfer failed 💀");
     }
   };
 
   return (
     <main>
       <Navbar />
+
       <section className="max-w-4xl mx-auto p-4 space-y-3">
         <div className="card flex items-center justify-between">
           <div>
             <p className="text-sm text-white/60">Wallet</p>
-            <p className="text-neon text-sm break-all">{auth.user?.walletAddress || 'Not connected'}</p>
+            <p className="text-neon text-sm break-all">
+              {user?.walletAddress || 'Not connected'}
+            </p>
           </div>
-          <button onClick={handleConnectWallet} className="px-3 py-2 bg-violet rounded-xl">Connect Freighter</button>
+
+          <button
+            onClick={handleConnectWallet}
+            className="px-3 py-2 bg-violet rounded-xl"
+          >
+            Connect Freighter
+          </button>
         </div>
 
         {rewards.map((reward) => (
@@ -57,13 +84,22 @@ export default function RewardsPage() {
               <p className="font-semibold">{reward.name}</p>
               <p className="text-sm text-white/70">{reward.description}</p>
             </div>
-            <button className="px-3 py-2 rounded-xl bg-white/10" onClick={() => setSelectedReward(reward)}>
+
+            <button
+              className="px-3 py-2 rounded-xl bg-white/10"
+              onClick={() => setSelectedReward(reward)}
+            >
               {reward.cost} XP
             </button>
           </div>
         ))}
       </section>
-      <RewardModal reward={selectedReward} onClaim={claim} onClose={() => setSelectedReward(null)} />
+
+      <RewardModal
+        reward={selectedReward}
+        onClaim={claim}
+        onClose={() => setSelectedReward(null)}
+      />
     </main>
   );
 }

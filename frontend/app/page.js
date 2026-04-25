@@ -1,35 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import { connectFreighterWallet } from "lib/freighter";
-import { addPoints, getPoints } from "lib/contract";
+import { useEffect, useState } from "react";
 
-export default function Dashboard() {
-  const [wallet, setWallet] = useState("");
-  const [points, setPoints] = useState(0);
+export default function Leaderboard() {
+  const [data, setData] = useState([]);
 
-  const connect = async () => {
-    const addr = await connectFreighterWallet();
-    setWallet(addr);
-  };
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/leaderboard"); // adjust port
+        const result = await res.json();
+        console.log(result);
+        setData(result.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  const add = async () => {
-    await addPoints(10);
-    const pts = await getPoints();
-    setPoints(parseInt(pts, 10));
-  };
+    fetchLeaderboard();
+  }, []);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🚀 Reward App</h1>
+    <div className="p-6">
+      <h1 className="text-2xl mb-4">🏆 Leaderboard</h1>
 
-      <button onClick={connect}>Connect Freighter</button>
-
-      <p>Wallet: {wallet}</p>
-
-      <button onClick={add}>Add 10 Points</button>
-
-      <h2>Points: {points}</h2>
+      {data.length === 0 ? (
+        <p>No data yet</p>
+      ) : (
+        data.map((user, i) => (
+          <div key={i} className="card mb-2">
+            <p>{user.name}</p>
+            <p>{user.points}</p>
+          </div>
+        ))
+      )}
     </div>
   );
 }

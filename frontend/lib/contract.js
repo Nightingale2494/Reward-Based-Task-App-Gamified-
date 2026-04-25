@@ -3,107 +3,62 @@
 import * as StellarSdk from "@stellar/stellar-sdk";
 import { connectFreighterWallet, signSorobanTx } from "./freighter";
 
-const {
-  TransactionBuilder,
-  Networks,
-  Contract,
-  nativeToScVal,
-  rpc
-} = StellarSdk;
-
-const CONTRACT_ID = "CDROQKVK2M2AXQTYCVRB55UCMKTZW3RT3ZW2ADXH53GESP3MERPLMOKK";
-
 const RPC_URL = "https://soroban-testnet.stellar.org";
+const NETWORK = StellarSdk.Networks.TESTNET;
 
-// 🔥 helper to fetch account
-const getAccount = async (address) => {
-  const res = await fetch(`${RPC_URL}/accounts/${address}`);
-  return await res.json();
-};
+// ⚠️ REPLACE THIS WITH YOUR TOKEN CONTRACT ID
+const TOKEN_ID = "YOUR_TOKEN_CONTRACT_ID_HERE";
 
-// 🔥 ADD POINTS
-export const addPoints = async (amount) => {
-  const userAddress = await connectFreighterWallet();
+// ⚠️ THIS IS YOUR ADMIN / SENDER WALLET
+const FROM_ADDRESS = "YOUR_ADMIN_WALLET_ADDRESS";
 
-  const account = await getAccount(userAddress);
-  const contract = new Contract(CONTRACT_ID);
+export const transferTokens = async (amount, toAddress) => {
+  try {
+    const userAddress = await connectFreighterWallet();
 
-  const tx = new TransactionBuilder(account, {
-    fee: "100",
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(
-      contract.call(
-        "add_points",
-        nativeToScVal(userAddress, { type: "address" }),
-        nativeToScVal(amount, { type: "i128" })
+    const server = new StellarSdk.rpc.Server(RPC_URL);
+    const account = await server.getAccount(userAddress);
+
+    const token = new StellarSdk.Contract(TOKEN_ID);
+
+    const tx = new StellarSdk.TransactionBuilder(account, {
+      fee: "100",
+      networkPassphrase: NETWORK,
+    })
+      .addOperation(
+        token.call(
+          "transfer",
+          new StellarSdk.Address(FROM_ADDRESS).toScVal(),
+          new StellarSdk.Address(toAddress).toScVal(),
+          StellarSdk.nativeToScVal(amount, { type: "i128" })
+        )
       )
-    )
-    .setTimeout(30)
-    .build();
+      .setTimeout(30)
+      .build();
 
-  // simulate via RPC manually
-  const simRes = await fetch(`${RPC_URL}/simulateTransaction`, {
-    method: "POST",
-    body: JSON.stringify({
-      transaction: tx.toXDR(),
-    }),
-  });
+    const sim = await server.simulateTransaction(tx);
+    if (sim.error) {
+      console.error(sim);
+      throw new Error("Simulation failed");
+    }
 
-  const sim = await simRes.json();
+    const preparedTx = await server.prepareTransaction(tx);
 
-  const preparedTx = rpc.assembleTransaction(tx, sim);
+    const signedXDR = await signSorobanTx(
+      preparedTx.toXDR(),
+      NETWORK,
+      userAddress
+    );
 
-  const signedXDR = await signSorobanTx(
-    preparedTx.toXDR(),
-    Networks.TESTNET,
-    userAddress
-  );
+    const result = await server.sendTransaction(
+      StellarSdk.TransactionBuilder.fromXDR(signedXDR, NETWORK)
+    );
 
-  const sendRes = await fetch(`${RPC_URL}/sendTransaction`, {
-  method: "POST",
-  body: JSON.stringify({
-    transaction: signedXDR,
-  }),
-});
+    console.log("TX SUCCESS:", result);
+    return result;
 
-const result = await sendRes.json();
-console.log("TX RESULT:", result);
-
-if (result.error) {
-  throw new Error(JSON.stringify(result.error));
-}
-
-return result;
-};
-
-// 📊 GET POINTS
-export const getPoints = async () => {
-  const userAddress = await connectFreighterWallet();
-
-  const account = await getAccount(userAddress);
-  const contract = new Contract(CONTRACT_ID);
-
-  const tx = new TransactionBuilder(account, {
-    fee: "100",
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(
-      contract.call(
-        "get_points",
-        nativeToScVal(userAddress, { type: "address" })
-      )
-    )
-    .setTimeout(30)
-    .build();
-
-  const simRes = await fetch(`${RPC_URL}/simulateTransaction`, {
-    method: "POST",
-    body: JSON.stringify({
-      transaction: tx.toXDR(),
-    }),
-  });
-
-  const sim = await simRes.json();
-  return sim.result?.retval;
+  } catch (err) {
+    console.error("TRANSFER ERROR:", err);
+    throw err;
+  }
 };
