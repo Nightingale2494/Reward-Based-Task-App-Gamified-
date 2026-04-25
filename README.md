@@ -78,21 +78,7 @@ Frontend runs on `http://localhost:3000`.
 ## 3) Soroban Contract Setup
 
 Prerequisites:
-- Rust toolchain (`rustup`)
-- Soroban CLI
-- Freighter wallet extension
 
-For Soroban CLI v26+, install the required Rust target once:
-
-```bash
-rustup target add wasm32v1-none
-```
-
-Build contract (recommended via Soroban CLI):
-
-```bash
-cd contracts/soroban
-soroban contract build --package task_rewards_contract
 ```
 
 Deploy example:
@@ -123,16 +109,4 @@ cd contracts
 - Persist auth in secure HTTP-only cookies if desired
 - Add PWA manifest/service worker
 
-## Windows / OneDrive Dev Warning Fix
-
-If you see this warning while running `npm run dev`:
-
-`PackFileCacheStrategy ... ENOENT ... rename ... .next\\cache\\webpack`
-
-it is usually caused by OneDrive file sync/locking around Next.js filesystem cache writes.
-This repo is configured to use **memory webpack cache in dev mode** to avoid this issue.
-
-If you still see it:
-- Pause OneDrive sync while developing
-- Or move the project out of OneDrive-managed folders
-- Clear `.next/` and restart dev server
+ main
